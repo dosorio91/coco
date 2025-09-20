@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { startOfWeek, addDays, format, addWeeks, subWeeks, isSameDay, isToday } from "date-fns";
+import { startOfWeek, addDays, format, addWeeks, subWeeks, isToday } from "date-fns";
 import { es } from "date-fns/locale";
 import { patientFirestoreService } from "@/lib/services/patientFirestoreService";
 import { Patient } from "@/lib/db/types";
@@ -19,7 +19,12 @@ export default function CalendarioPage() {
   const [showAtencion, setShowAtencion] = useState(false);
   const [atencion, setAtencion] = useState({ nombre: '', fecha: '', horaInicio: '', horaFin: '' });
   const [atencionError, setAtencionError] = useState('');
-  const [eventosUnicos, setEventosUnicos] = useState<any[]>(() => {
+  const [eventosUnicos, setEventosUnicos] = useState<{
+    nombre: string;
+    fecha: string;
+    horaInicio: string;
+    horaFin: string;
+  }[]>(() => {
     if (typeof window !== 'undefined') {
       try {
         return JSON.parse(localStorage.getItem('eventosUnicos') || '[]');
@@ -45,7 +50,14 @@ export default function CalendarioPage() {
   }, []);
 
   // Consolidar atenciones de todos los pacientes
-  let events = [];
+  const events: {
+    date: string;
+    start: string;
+    end: string;
+    name: string;
+    id: string;
+    tipo: string;
+  }[] = [];
   for (const patient of patients) {
     if (patient.schedules && patient.schedules.length > 0) {
       for (const block of patient.schedules) {
@@ -171,13 +183,13 @@ export default function CalendarioPage() {
       )}
           {/* View selector (only Week enabled) */}
           {/* Selector de vista eliminado por requerimiento */}
-          <a
+          <Link
             href="/patients"
             className="bg-[#635bff] hover:bg-[#5146e1] text-white font-semibold rounded-lg px-5 py-2 text-base shadow transition-colors"
             style={{ minWidth: '170px', display: 'inline-block', textAlign: 'center' }}
           >
             Ir a Pacientes
-          </a>
+          </Link>
         </div>
       </div>
       {/* Week Navigation */}
@@ -203,7 +215,7 @@ export default function CalendarioPage() {
             </tr>
           </thead>
           <tbody>
-            {getTimeOptions().map((hour, idx) => (
+            {getTimeOptions().map((hour) => (
               <tr key={hour}>
                 <td className="p-3 text-left font-mono text-xs text-[#b0b3c6] bg-[#f8fafc] border-b border-[#e5e7eb]">{hour}</td>
                 {eventsByDay.map((day, dIdx) => {
