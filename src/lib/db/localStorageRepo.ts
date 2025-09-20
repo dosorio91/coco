@@ -33,7 +33,7 @@ function updatePatient(id: string, patientData: Partial<Patient>): Patient | nul
       newSchedules = patients[index].schedules;
     }
     // Si se está inactivando o schedules es [], elimina cualquier rastro anterior
-    let updatedPatient: Patient = {
+  const updatedPatient: Patient = {
       ...patients[index],
       ...patientData,
       updatedAt: new Date().toISOString(),

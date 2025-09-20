@@ -45,7 +45,7 @@ export default function ProximasAtencionesPage() {
   // Consolidar eventos de los próximos 7 días (pacientes y únicos)
   const now = new Date();
   const endDate = addDays(now, 7);
-  let eventos: { date: string; start: string; end: string; name: string; tipo: string }[] = [];
+  const eventos: { date: string; start: string; end: string; name: string; tipo: string }[] = [];
   for (const patient of patients) {
     if (patient.schedules && patient.schedules.length > 0) {
       for (const block of patient.schedules) {
