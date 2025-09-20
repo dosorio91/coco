@@ -21,7 +21,7 @@ interface PatientsTableProps {
   onToggleActive?: (id: string) => void;
 }
 
-export default function PatientsTable({ patients, onAdd, onEdit, onDelete, onToggleActive }: PatientsTableProps) {
+export default function PatientsTable({ patients, onEdit, onDelete, onToggleActive }: PatientsTableProps) {
   return (
     <div className="space-y-4">
       <Table className="border border-[#e5e7eb] rounded-none overflow-hidden shadow-md">

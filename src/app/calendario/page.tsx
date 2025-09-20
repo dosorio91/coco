@@ -260,8 +260,8 @@ export default function CalendarioPage() {
 }
 
 // Reutilizar la función auxiliar de horarios
-function getTimeOptions() {
-  const options = [];
+function getTimeOptions(): string[] {
+  const options: string[] = [];
   let hour = 8, min = 0;
   while (hour < 21 || (hour === 20 && min <= 15)) {
     const h = String(hour).padStart(2, '0');

@@ -6,18 +6,7 @@ import { addDays, format, isAfter, isEqual } from "date-fns";
 
 const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 
-function getTimeOptions() {
-  const options = [];
-  let hour = 8, min = 0;
-  while (hour < 21 || (hour === 20 && min <= 15)) {
-    const h = String(hour).padStart(2, '0');
-    const m = String(min).padStart(2, '0');
-    options.push(`${h}:${m}`);
-    min += 15;
-    if (min === 60) { hour++; min = 0; }
-  }
-  return options;
-}
+// getTimeOptions eliminado porque no se usa
 
 export default function ProximasAtencionesPage() {
   const [patients, setPatients] = useState<Patient[]>([]);

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import * as TablePrimitive from "@radix-ui/react-table"
+// import * as TablePrimitive from "@radix-ui/react-table" // No se usa
 import { cn } from "@/lib/utils"
 
 const Table = React.forwardRef<

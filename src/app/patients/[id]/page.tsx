@@ -399,7 +399,7 @@ export default function PatientProfile() {
                 </DialogDescription>
               </DialogHeader>
               <div className="flex justify-end mt-4">
-                <Button onClick={() => { setShowTopeModal(false); setPendingSchedule(null); setTopeBlocks([]); }}>Cerrar</Button>
+                <Button onClick={() => { setShowTopeModal(false); setTopeBlocks([]); }}>Cerrar</Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -410,29 +410,29 @@ export default function PatientProfile() {
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <label className="block text-sm font-medium text-[#22223b] mb-1">Apellido Paciente</label>
-                <input type="text" className="w-full rounded-md border border-[#e5e7eb] px-3 py-2" value={patient.lastName} onChange={(e) => { setPatient({ ...patient, lastName: e.target.value }); setIsDirty(true); }} placeholder="Opcional" />
+                <input type="text" className="w-full rounded-md border border-[#e5e7eb] px-3 py-2" value={patient.lastName} onChange={(e) => { setPatient({ ...patient, lastName: e.target.value }); }} placeholder="Opcional" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#22223b] mb-1">Edad</label>
-                <input type="number" className="w-full rounded-md border border-[#e5e7eb] px-3 py-2" value={patient.age} onChange={(e) => { setPatient({ ...patient, age: e.target.value }); setIsDirty(true); }} placeholder="Opcional" />
+                <input type="number" className="w-full rounded-md border border-[#e5e7eb] px-3 py-2" value={patient.age} onChange={(e) => { setPatient({ ...patient, age: e.target.value }); }} placeholder="Opcional" />
               </div>
             </div>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-[#22223b] mb-1">Tutor</label>
-                <input type="text" className="w-full rounded-md border border-[#e5e7eb] px-3 py-2" value={patient.tutorName} onChange={(e) => { setPatient({ ...patient, tutorName: e.target.value }); setIsDirty(true); }} placeholder="Opcional" />
+                <input type="text" className="w-full rounded-md border border-[#e5e7eb] px-3 py-2" value={patient.tutorName} onChange={(e) => { setPatient({ ...patient, tutorName: e.target.value }); }} placeholder="Opcional" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#22223b] mb-1">Relación</label>
-                <input type="text" className="w-full rounded-md border border-[#e5e7eb] px-3 py-2" value={patient.relationship} onChange={(e) => { setPatient({ ...patient, relationship: e.target.value }); setIsDirty(true); }} placeholder="Opcional" />
+                <input type="text" className="w-full rounded-md border border-[#e5e7eb] px-3 py-2" value={patient.relationship} onChange={(e) => { setPatient({ ...patient, relationship: e.target.value }); }} placeholder="Opcional" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#22223b] mb-1">Teléfono</label>
-                <input type="text" className="w-full rounded-md border border-[#e5e7eb] px-3 py-2" value={patient.phone} onChange={(e) => { setPatient({ ...patient, phone: e.target.value }); setIsDirty(true); }} placeholder="Opcional" />
+                <input type="text" className="w-full rounded-md border border-[#e5e7eb] px-3 py-2" value={patient.phone} onChange={(e) => { setPatient({ ...patient, phone: e.target.value }); }} placeholder="Opcional" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#22223b] mb-1">Centro</label>
-                <select className="w-full rounded-md border border-[#e5e7eb] px-3 py-2 bg-white focus:border-[#635bff] focus:ring-[#635bff]" value={patient.centro} onChange={e => { setPatient({ ...patient, centro: e.target.value as any }); setIsDirty(true); }} required>
+                <select className="w-full rounded-md border border-[#e5e7eb] px-3 py-2 bg-white focus:border-[#635bff] focus:ring-[#635bff]" value={patient.centro} onChange={e => { setPatient({ ...patient, centro: e.target.value as Patient["centro"] }); }} required>
                   <option value="Fénix">Fénix</option>
                   <option value="Bosques">Bosques</option>
                   <option value="Particular">Particular</option>
@@ -476,8 +476,8 @@ export default function PatientProfile() {
                     const collision = await findScheduleCollision(schedules[schedules.length - 1]);
                     if (Array.isArray(collision) && collision.length > 0) {
                       // Construir arrays de nombres y bloques
-                      const names = collision.map((c: any) => `${c.patient.firstName} ${c.patient.lastName}`);
-                      const blocks = collision.flatMap((c: any) => c.blocks.map((b: any) => ({ ...b, patientName: `${c.patient.firstName} ${c.patient.lastName}` })));
+                      const names = collision.map((c: { patient: Patient; blocks: { day: string; start: string; end: string }[] }) => `${c.patient.firstName} ${c.patient.lastName}`);
+                      const blocks = collision.flatMap((c: { patient: Patient; blocks: { day: string; start: string; end: string }[] }) => c.blocks.map((b) => ({ ...b, patientName: `${c.patient.firstName} ${c.patient.lastName}` })));
                       setTopeBlocks(blocks);
                       setShowTopeModal(true);
                       // No permite terminar edición
@@ -700,12 +700,13 @@ export default function PatientProfile() {
 }
 
 // --- Componente auxiliar para selector de fechas e informe ---
-function DateRangeReport({ patient, sessions }: { patient: any, sessions: any[] }) {
+// import type { Patient, Session } from "@/lib/db/types"; // Ya importados arriba
+function DateRangeReport({ patient, sessions }: { patient: Patient, sessions: Session[] }) {
   const [open, setOpen] = React.useState(false);
   const [start, setStart] = React.useState("");
   const [end, setEnd] = React.useState("");
-  const [filtered, setFiltered] = React.useState<any[]>(sessions);
-  const pdfBtnRef = useRef<any>(null);
+  const [filtered, setFiltered] = React.useState<Session[]>(sessions);
+  const pdfBtnRef = useRef<HTMLButtonElement>(null!);
 
   const handleGenerate = () => {
     if (!start || !end) return;

@@ -3,7 +3,7 @@
 import { usePatients } from "@/lib/hooks/usePatients"
 import PatientsTable from "./patients-table"
 import { PatientDialog } from "@/components/patients/patient-dialog"
-import { Button } from "@/components/ui/button"
+// import { Button } from "@/components/ui/button" // No se usa
 import { Patient } from "@/lib/db/types"
 
 export default function PatientsPage() {
