@@ -1,0 +1,479 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { useParams } from "next/navigation"
+import Link from "next/link"
+import { toast } from "sonner"
+import { ArrowLeftIcon, Edit2Icon, SaveIcon, PlusIcon, Pencil, Trash2, Eye } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
+import { Patient, Session } from "@/lib/db/types"
+import patientService from "../../../lib/services/patient"
+import { getSessions, createSession, updateSession, deleteSession } from "../../../lib/services/session"
+
+// Funciones auxiliares para el manejo de fechas
+const formatDateForDisplay = (date: Date): string => {
+  return date.toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  })
+}
+
+const formatDateForInput = (date: Date): string => {
+  return date.toISOString().split('T')[0]
+}
+
+const parseDate = (dateString: string): Date => {
+  const [day, month, year] = dateString.split('/').map(num => parseInt(num, 10))
+  const date = new Date(year, month - 1, day)
+  date.setHours(12) // Establecer hora a mediodía para evitar problemas con zonas horarias
+  return date
+}
+
+export default function PatientProfile() {
+  const params = useParams()
+  const [patient, setPatient] = useState<Patient | null>(null)
+  const [sessions, setSessions] = useState<Session[]>([])
+  const [loading, setLoading] = useState(true)
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [isNewSessionOpen, setIsNewSessionOpen] = useState(false)
+  const [editingSession, setEditingSession] = useState<Session | null>(null)
+  const [sessionForm, setSessionForm] = useState({
+    date: formatDateForDisplay(new Date()),
+    work: '',
+    progress: '',
+    tasks: ''
+  })
+
+  useEffect(() => {
+    const loadPatient = () => {
+      try {
+        console.log('Loading patient with ID:', params.id)
+        const patientData = patientService.getPatientById(params.id as string)
+        console.log('Patient data:', patientData)
+        setPatient(patientData)
+      } catch (error) {
+        console.error('Error loading patient:', error)
+        toast.error("Error al cargar los datos del paciente")
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadPatient()
+    loadSessions()
+  }, [params.id])
+
+  const loadSessions = () => {
+    try {
+      const sessionData = getSessions(params.id as string)
+      setSessions(sessionData)
+    } catch (error) {
+      toast.error("Error al cargar las sesiones")
+    }
+  }
+
+  const handleCreateSession = () => {
+    try {
+      if (!patient) return
+      const newSession = {
+        ...sessionForm,
+        date: formatDateForInput(parseDate(sessionForm.date))
+      }
+      createSession(patient.id, newSession)
+      loadSessions()
+      setIsNewSessionOpen(false)
+      setSessionForm({
+        date: formatDateForDisplay(new Date()),
+        work: '',
+        progress: '',
+        tasks: ''
+      })
+      toast.success("Sesión creada correctamente")
+    } catch (error) {
+      toast.error("Error al crear la sesión")
+    }
+  }
+
+  const handleEditSession = (session: Session) => {
+    setEditingSession(session)
+    const date = new Date(session.date)
+    date.setHours(12) // Establecer hora a mediodía para evitar problemas con zonas horarias
+    setSessionForm({
+      date: formatDateForDisplay(date),
+      work: session.work || '',
+      progress: session.progress || '',
+      tasks: session.tasks || ''
+    })
+    setIsNewSessionOpen(true)
+  }
+
+  const handleUpdateSession = () => {
+    try {
+      if (!editingSession) return
+      const updatedSession = {
+        ...sessionForm,
+        date: formatDateForInput(parseDate(sessionForm.date))
+      }
+      updateSession(editingSession.id, updatedSession)
+      loadSessions()
+      setIsNewSessionOpen(false)
+      setEditingSession(null)
+      setSessionForm({
+        date: formatDateForDisplay(new Date()),
+        work: '',
+        progress: '',
+        tasks: ''
+      })
+      toast.success("Sesión actualizada correctamente")
+    } catch (error) {
+      toast.error("Error al actualizar la sesión")
+    }
+  }
+
+  const handleDeleteSession = (sessionId: string) => {
+    try {
+      deleteSession(sessionId)
+      loadSessions()
+      toast.success("Sesión eliminada correctamente")
+    } catch (error) {
+      toast.error("Error al eliminar la sesión")
+    }
+  }
+
+  const handleSave = () => {
+    if (!patient) return
+    try {
+      patientService.updatePatient(patient.id, patient)
+      setIsEditMode(false)
+      toast.success("Datos actualizados correctamente")
+    } catch (error) {
+      toast.error("Error al actualizar los datos")
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="container flex items-center justify-center py-10">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    )
+  }
+
+  if (!patient) {
+    return (
+      <div className="container py-10">
+        <div className="rounded-md bg-red-50 p-4">
+          <div className="flex">
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">Error</h3>
+              <div className="mt-2 text-sm text-red-700">
+                <p>No se encontró el paciente</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="container py-10">
+      <div className="mb-8">
+        <div className="flex items-center gap-4">
+          <Link href="/patients">
+            <Button variant="ghost" size="icon">
+              <ArrowLeftIcon className="h-4 w-4" />
+            </Button>
+          </Link>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {patient.firstName} {patient.lastName}
+          </h1>
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* Datos del Paciente */}
+        <div className="bg-white rounded-xl p-6 shadow-md">
+          <h2 className="text-xl font-semibold mb-4">Datos del Paciente</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">
+                Nombre Paciente
+              </label>
+              <input
+                type="text"
+                className="w-full rounded-md border border-gray-300 px-3 py-2"
+                value={patient.firstName}
+                readOnly={!isEditMode}
+                onChange={(e) => setPatient({ ...patient, firstName: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">
+                Apellido Paciente
+              </label>
+              <input
+                type="text"
+                className="w-full rounded-md border border-gray-300 px-3 py-2"
+                value={patient.lastName}
+                readOnly={!isEditMode}
+                onChange={(e) => setPatient({ ...patient, lastName: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">
+                Edad
+              </label>
+              <input
+                type="text"
+                className="w-full rounded-md border border-gray-300 px-3 py-2"
+                value={patient.age}
+                readOnly={!isEditMode}
+                onChange={(e) => setPatient({ ...patient, age: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">
+                Tutor
+              </label>
+              <input
+                type="text"
+                className="w-full rounded-md border border-gray-300 px-3 py-2"
+                value={patient.tutorName}
+                readOnly={!isEditMode}
+                onChange={(e) => setPatient({ ...patient, tutorName: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">
+                Relación
+              </label>
+              <input
+                type="text"
+                className="w-full rounded-md border border-gray-300 px-3 py-2"
+                value={patient.relationship}
+                readOnly={!isEditMode}
+                onChange={(e) => setPatient({ ...patient, relationship: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">
+                Teléfono
+              </label>
+              <input
+                type="text"
+                className="w-full rounded-md border border-gray-300 px-3 py-2"
+                value={patient.phone}
+                readOnly={!isEditMode}
+                onChange={(e) => setPatient({ ...patient, phone: e.target.value })}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Motivo de Consulta */}
+        <div className="bg-white rounded-xl p-6 shadow-md">
+          <h2 className="text-xl font-semibold mb-4">Motivo de Consulta</h2>
+          <textarea
+            className="w-full min-h-[200px] rounded-md border border-gray-300 px-3 py-2 resize-none"
+            placeholder="Ingrese el motivo de consulta..."
+            value={patient.consultation || ""}
+            readOnly={!isEditMode}
+            onChange={(e) => setPatient({ ...patient, consultation: e.target.value })}
+          />
+        </div>
+      </div>
+
+      <div className="mt-6 flex justify-end gap-4">
+        {!isEditMode ? (
+          <>
+            <Button 
+              onClick={() => {
+                setEditingSession(null)
+                setSessionForm({
+                  date: formatDateForDisplay(new Date()),
+                  work: '',
+                  progress: '',
+                  tasks: ''
+                })
+                setIsNewSessionOpen(true)
+              }}
+              className="bg-[#e0f2fe] hover:bg-[#bae6fd] text-[#0369a1] border-0"
+            >
+              <PlusIcon className="h-4 w-4 mr-2" />
+              Nueva Sesión
+            </Button>
+            <Button 
+              onClick={() => setIsEditMode(true)}
+              className="bg-[#e0f2fe] hover:bg-[#bae6fd] text-[#0369a1] border-0"
+            >
+              <Edit2Icon className="h-4 w-4 mr-2" />
+              Editar
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsEditMode(false)
+                setPatient(patientService.getPatientById(params.id as string))
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleSave}
+              className="bg-[#00d632] hover:bg-[#00b82b] text-white"
+            >
+              <SaveIcon className="h-4 w-4 mr-2" />
+              Guardar
+            </Button>
+          </>
+        )}
+      </div>
+
+      <Dialog open={isNewSessionOpen} onOpenChange={setIsNewSessionOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingSession ? 'Editar Sesión' : 'Nueva Sesión'}</DialogTitle>
+            <DialogDescription>
+              Complete los datos de la sesión. Solo la fecha es obligatoria.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="date">Fecha</Label>
+              <div className="relative">
+                <Input
+                  id="date"
+                  type="date"
+                  value={formatDateForInput(parseDate(sessionForm.date))}
+                  onChange={(e) => {
+                    const date = new Date(e.target.value)
+                    date.setHours(12) // Establecer hora a mediodía para evitar problemas con zonas horarias
+                    setSessionForm({ ...sessionForm, date: formatDateForDisplay(date) })
+                  }}
+                  required
+                />
+                <div className="absolute right-0 top-0 h-full flex items-center pr-3 text-sm text-gray-500">
+                  {sessionForm.date}
+                </div>
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="work">Trabajo Realizado</Label>
+              <Textarea
+                id="work"
+                value={sessionForm.work}
+                onChange={(e) => setSessionForm({ ...sessionForm, work: e.target.value })}
+                placeholder="Describa el trabajo realizado en esta sesión..."
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="progress">Avances / Progreso</Label>
+              <Textarea
+                id="progress"
+                value={sessionForm.progress}
+                onChange={(e) => setSessionForm({ ...sessionForm, progress: e.target.value })}
+                placeholder="Describa los avances observados..."
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="tasks">Tareas</Label>
+              <Textarea
+                id="tasks"
+                value={sessionForm.tasks}
+                onChange={(e) => setSessionForm({ ...sessionForm, tasks: e.target.value })}
+                placeholder="Describa las tareas asignadas..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsNewSessionOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={editingSession ? handleUpdateSession : handleCreateSession}>
+              {editingSession ? 'Guardar Cambios' : 'Crear Sesión'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {sessions.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold mb-4">Historial de Sesiones</h2>
+          <div className="rounded-md border">
+            <table className="w-full caption-bottom text-sm">
+              <thead className="[&_tr]:border-b">
+                <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Nº</th>
+                  <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Fecha</th>
+                  <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="[&_tr:last-child]:border-0">
+                {sessions
+                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                  .map((session, index) => (
+                    <tr
+                      key={session.id}
+                      className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+                    >
+                      <td className="p-4 align-middle">{sessions.length - index}</td>
+                      <td className="p-4 align-middle">
+                        {formatDateForDisplay(new Date(session.date))}
+                      </td>
+                      <td className="p-4 align-middle text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            onClick={() => handleEditSession(session)}
+                          >
+                            <Eye className="h-4 w-4" />
+                            <span className="sr-only">Ver sesión</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 p-0 text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50"
+                            onClick={() => handleEditSession(session)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                            <span className="sr-only">Editar sesión</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleDeleteSession(session.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Eliminar sesión</span>
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

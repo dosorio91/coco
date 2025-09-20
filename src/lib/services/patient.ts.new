@@ -1,0 +1,40 @@
+import { Patient } from "@/lib/db/types"
+import {
+  getPatients as getPatientsList,
+  createPatient as createPatientInRepo,
+  updatePatient as updatePatientInRepo,
+  deletePatient as deletePatientInRepo
+} from "@/lib/db/localStorageRepo"
+
+// Service functions that use the repository
+const getPatients = (): Patient[] => {
+  return getPatientsList()
+}
+
+const getPatientById = (id: string): Patient | null => {
+  const patients = getPatients()
+  return patients.find((patient) => patient.id === id) || null
+}
+
+const createPatient = (patientData: Omit<Patient, "id" | "createdAt" | "updatedAt">): Patient => {
+  return createPatientInRepo(patientData)
+}
+
+const updatePatient = (id: string, patientData: Partial<Omit<Patient, "id" | "createdAt" | "updatedAt">>): Patient | null => {
+  return updatePatientInRepo(id, patientData)
+}
+
+const deletePatient = (id: string): boolean => {
+  return deletePatientInRepo(id)
+}
+
+// Export all functions
+const patientService = {
+  getPatients,
+  getPatientById,
+  createPatient,
+  updatePatient,
+  deletePatient,
+}
+
+export default patientService
