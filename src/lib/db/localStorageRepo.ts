@@ -26,7 +26,7 @@ function updatePatient(id: string, patientData: Partial<Patient>): Patient | nul
   const index = patients.findIndex((p) => p.id === id);
   if (index !== -1) {
     // Si schedules está presente y es un arreglo vacío, bórralo realmente
-    let newSchedules: any = [];
+  let newSchedules: Patient["schedules"] = [];
     if (Array.isArray(patientData.schedules)) {
       newSchedules = patientData.schedules;
     } else if (Array.isArray(patients[index].schedules)) {
