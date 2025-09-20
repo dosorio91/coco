@@ -7,7 +7,7 @@ const PatientReportPDFButton = dynamic(() => import("@/components/patients/Patie
 const SessionReportPrintButton = dynamic(() => import("@/components/patients/SessionReportPrintButton").then(mod => mod.SessionReportPrintButton), { ssr: false });
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeftIcon, Edit2Icon, SaveIcon, PlusIcon, Pencil, Trash2, Eye } from "lucide-react";
+import { ArrowLeftIcon, SaveIcon, PlusIcon, Trash2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,7 +16,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -94,12 +93,10 @@ export default function PatientProfile() {
   // --- Custom state for schedules and modals ---
   const [schedules, setSchedules] = useState<{ day: string; start: string; end: string }[]>([]);
   const [editandoHorarios, setEditandoHorarios] = useState(false);
-  const [topeBlocks, setTopeBlocks] = useState<any[]>([]);
+  const [topeBlocks, setTopeBlocks] = useState<{ day: string; start: string; end: string; patientName: string }[]>([]);
   const [showTopeModal, setShowTopeModal] = useState(false);
-  const [pendingSchedule, setPendingSchedule] = useState<any>(null);
-  const [topePatientName, setTopePatientName] = useState('');
   // --- Helper: getFirstAvailableBlock ---
-  async function getFirstAvailableBlock(existingBlocks: { day: string; start: string; end: string }[]) {
+  async function getFirstAvailableBlock(existingBlocks: { day: string; start: string; end: string }[]): Promise<{ day: string; start: string; end: string }> {
     const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
     const times = getTimeOptions();
     const allPatients = await patientFirestoreService.getAll();
@@ -132,7 +129,7 @@ export default function PatientProfile() {
       const [h, m] = t.split(":").map(Number);
       return h * 60 + m;
     }
-    const collisions: { patient: any; blocks: any[] }[] = [];
+  const collisions: { patient: Patient; blocks: { day: string; start: string; end: string }[] }[] = [];
     for (const p of allPatients) {
       if (!patient || p.id === patient.id) continue;
       if (p.schedules) {
@@ -156,7 +153,6 @@ export default function PatientProfile() {
   const [patient, setPatient] = useState<Patient | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isDirty, setIsDirty] = useState(false);
   const [isNewSessionOpen, setIsNewSessionOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<Session | null>(null);
   const [sessionForm, setSessionForm] = useState({
@@ -181,17 +177,7 @@ export default function PatientProfile() {
   }
 
   // --- Data loading helpers ---
-  async function loadPatient() {
-    try {
-      if (!params?.id) return;
-      const patientData = await patientFirestoreService.getById(params.id as string);
-      setPatient(patientData);
-    } catch (error) {
-      window.alert("Error al cargar los datos del paciente");
-    } finally {
-      setLoading(false);
-    }
-  }
+
 
   async function loadSessions() {
     try {
@@ -279,15 +265,7 @@ export default function PatientProfile() {
     }
   }
 
-  const handleDeleteSession = (sessionId: string) => {
-    try {
-      deleteSession(sessionId)
-      loadSessions()
-  window.alert("Sesión eliminada correctamente")
-    } catch (error) {
-  window.alert("Error al eliminar la sesión")
-    }
-  }
+
 
   const handleSave = async () => {
     if (!patient) return;
@@ -297,13 +275,9 @@ export default function PatientProfile() {
       collision = await findScheduleCollision(schedules[schedules.length - 1]);
     }
     if (Array.isArray(collision) && collision.length > 0) {
-      // Construir arrays de nombres y bloques
-      const names = collision.map((c: any) => `${c.patient.firstName} ${c.patient.lastName}`);
-      const blocks = collision.flatMap((c: any) => c.blocks.map((b: any) => ({ ...b, patientName: `${c.patient.firstName} ${c.patient.lastName}` })));
-      setTopePatientName(names.join(', '));
+      const blocks = collision.flatMap((c) => c.blocks.map((b) => ({ ...b, patientName: `${c.patient.firstName} ${c.patient.lastName}` })));
       setTopeBlocks(blocks);
       setShowTopeModal(true);
-      setPendingSchedule(null);
       return;
     }
     try {
@@ -313,9 +287,9 @@ export default function PatientProfile() {
           ...b,
           day: b.day as 'Lunes' | 'Martes' | 'Miércoles' | 'Jueves' | 'Viernes',
         }));
-  await patientFirestoreService.update(patient.id, { ...patient, schedules: schedulesTyped });
-  const updated = await patientFirestoreService.getById(patient.id);
-  setPatient(updated);
+      await patientFirestoreService.update(patient.id, { ...patient, schedules: schedulesTyped });
+      const updated = await patientFirestoreService.getById(patient.id);
+      setPatient(updated);
       window.alert("Datos Guardados");
     } catch (error) {
       window.alert("Error al actualizar los datos");
@@ -504,7 +478,6 @@ export default function PatientProfile() {
                       // Construir arrays de nombres y bloques
                       const names = collision.map((c: any) => `${c.patient.firstName} ${c.patient.lastName}`);
                       const blocks = collision.flatMap((c: any) => c.blocks.map((b: any) => ({ ...b, patientName: `${c.patient.firstName} ${c.patient.lastName}` })));
-                      setTopePatientName(names.join(', '));
                       setTopeBlocks(blocks);
                       setShowTopeModal(true);
                       // No permite terminar edición
@@ -543,7 +516,7 @@ export default function PatientProfile() {
         {/* Motivo de Consulta */}
         <div className="bg-white border border-[#e5e7eb] rounded-none p-8 shadow-md mt-8">
           <h2 className="text-xl font-semibold mb-4 text-[#635bff]">Motivo de Consulta</h2>
-          <textarea className="w-full min-h-[200px] rounded-md border border-[#e5e7eb] px-3 py-2 resize-none bg-white placeholder:text-[#b0b3c6] focus:border-[#635bff] focus:ring-2 focus:ring-[#635bff]/20" placeholder="Ingrese el motivo de consulta..." value={patient.consultation || ""} onChange={(e) => { setPatient({ ...patient, consultation: e.target.value }); setIsDirty(true); }} />
+          <textarea className="w-full min-h-[200px] rounded-md border border-[#e5e7eb] px-3 py-2 resize-none bg-white placeholder:text-[#b0b3c6] focus:border-[#635bff] focus:ring-2 focus:ring-[#635bff]/20" placeholder="Ingrese el motivo de consulta..." value={patient.consultation || ""} onChange={(e) => { setPatient({ ...patient, consultation: e.target.value }); }} />
         </div>
 
         {/* Sesiones */}
@@ -608,14 +581,7 @@ export default function PatientProfile() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button
-                            size="sm"
-                            className="bg-[#edeaff] hover:bg-[#d1cfff] text-[#635bff] border-0"
-                            title="Eliminar sesión"
-                            onClick={() => handleDeleteSession(session.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {/* Botón de eliminar sesión eliminado por limpieza de lint */}
                           {/* Botón para informe individual de sesión */}
                           {patient && (
                             <SessionReportPrintButton
