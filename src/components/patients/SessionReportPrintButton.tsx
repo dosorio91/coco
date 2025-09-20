@@ -5,14 +5,12 @@ interface SessionReportPrintButtonProps {
     nombre: string;
     apellido: string;
     edad?: string | number;
-    [key: string]: any;
   };
   session: {
     fecha: string;
     trabajoRealizado: string;
     avances: string;
     tareas: string;
-    [key: string]: any;
   };
 }
 
