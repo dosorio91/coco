@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Patient, Session } from "@/lib/db/types";
 import React from "react";
 
-export function PatientReportPDFButton({ patient, sessions, triggerRef }: { patient: Patient, sessions: Session[], triggerRef?: any }) {
+export function PatientReportPDFButton({ patient, sessions, triggerRef }: { patient: Patient, sessions: Session[], triggerRef?: React.RefObject<HTMLButtonElement> }) {
   React.useEffect(() => {
     if (triggerRef && triggerRef.current) {
       triggerRef.current.onclick = handlePrint;
