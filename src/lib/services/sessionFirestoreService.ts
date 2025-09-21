@@ -10,6 +10,7 @@ import {
   setDoc,
   QueryDocumentSnapshot,
   DocumentData,
+  Query,
   query as fsQuery,
   where
 } from "firebase/firestore";
@@ -27,12 +28,12 @@ function fromFirestore(docSnap: QueryDocumentSnapshot<DocumentData>): Session {
 export const sessionFirestoreService = {
   async getAll(patientId?: string): Promise<Session[]> {
     const colRef = collection(db, SESSIONS_COLLECTION);
-    let q = colRef;
+  let q: Query<DocumentData, DocumentData> = colRef;
     if (patientId) {
       q = fsQuery(colRef, where("patientId", "==", patientId));
     }
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(fromFirestore);
+  return querySnapshot.docs.map(docSnap => fromFirestore(docSnap as QueryDocumentSnapshot<DocumentData>));
   },
   async getById(id: string): Promise<Session | null> {
     const docSnap = await getDoc(doc(db, SESSIONS_COLLECTION, id));
