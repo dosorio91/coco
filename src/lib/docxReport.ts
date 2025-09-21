@@ -53,10 +53,10 @@ export async function generatePatientReport(patient: Patient, sessions: Session[
             rows: [
               new TableRow({
                 children: [
-                  new TableCell({ children: [new Paragraph({ text: "Fecha", bold: true, color: violet })] }),
-                  new TableCell({ children: [new Paragraph({ text: "Trabajo Realizado", bold: true, color: violet })] }),
-                  new TableCell({ children: [new Paragraph({ text: "Avances/Progreso", bold: true, color: violet })] }),
-                  new TableCell({ children: [new Paragraph({ text: "Tareas", bold: true, color: violet })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Fecha", bold: true, color: violet })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Trabajo Realizado", bold: true, color: violet })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Avances/Progreso", bold: true, color: violet })] })] }),
+                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Tareas", bold: true, color: violet })] })] }),
                 ],
               }),
               ...sessions.map(s => new TableRow({
