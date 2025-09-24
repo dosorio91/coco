@@ -6,6 +6,7 @@ export type ScheduleBlock = {
 
 export interface Patient {
   id: string
+  userId: string // UID del usuario propietario
   firstName: string
   lastName: string
   age: string

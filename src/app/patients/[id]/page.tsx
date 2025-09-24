@@ -24,10 +24,14 @@ import { Label } from "@/components/ui/label";
 import { Patient, Session } from "@/lib/db/types";
 import { patientFirestoreService } from "@/lib/services/patientFirestoreService";
 import { sessionFirestoreService } from "@/lib/services/sessionFirestoreService";
+import { useAuth } from "@/components/auth/FirebaseAuthProvider";
 
 export default function PatientProfile() {
+  const { user } = useAuth();
   // Crear nueva sesión
   const handleCreateSession = async () => {
+  if (!user) throw new Error('No hay usuario autenticado');
+  await sessionFirestoreService.create({ ...sessionToCreate, userId: user.uid });
     try {
       if (!params?.id) return;
       // Normalizar fecha a dd/mm/aaaa
@@ -77,12 +81,14 @@ export default function PatientProfile() {
         return;
       }
       const patientData = await patientFirestoreService.getById(params.id as string);
+  if (!user) return;
       setPatient(patientData);
       setSchedules(patientData?.schedules || []);
       setLoading(false);
       // Cargar sesiones
       try {
         const sessionData = await sessionFirestoreService.getAll(params.id as string);
+  const sessionData = await sessionFirestoreService.getAll(params.id as string, user.uid);
         setSessions(sessionData);
       } catch (error) {
         // No bloquear la carga por error de sesiones
@@ -100,6 +106,8 @@ export default function PatientProfile() {
     const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
     const times = getTimeOptions();
     const allPatients = await patientFirestoreService.getAll();
+  if (!user) return [];
+  const allPatients = await patientFirestoreService.getAll(user.uid);
     let allBlocks: { day: string; start: string; end: string }[] = [];
     for (const p of allPatients) {
       if (!patient || p.id === patient.id) continue;

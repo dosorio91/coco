@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useAuth } from "@/components/auth/FirebaseAuthProvider";
 import { startOfWeek, addDays, format, addWeeks, subWeeks, isToday } from "date-fns";
 import { es } from "date-fns/locale";
 import { patientFirestoreService } from "@/lib/services/patientFirestoreService";
@@ -11,6 +12,7 @@ import Link from "next/link";
 const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 
 export default function CalendarioPage() {
+  const { user } = useAuth();
   const [current, setCurrent] = useState(new Date());
   const weekStart = startOfWeek(current, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
@@ -25,9 +27,9 @@ export default function CalendarioPage() {
     horaInicio: string;
     horaFin: string;
   }[]>(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && user) {
       try {
-        return JSON.parse(localStorage.getItem('eventosUnicos') || '[]');
+        return JSON.parse(localStorage.getItem(`eventosUnicos_${user.uid}`) || '[]');
       } catch { return []; }
     }
     return [];
@@ -35,19 +37,20 @@ export default function CalendarioPage() {
 
   // Guardar eventos únicos en localStorage
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('eventosUnicos', JSON.stringify(eventosUnicos));
+    if (typeof window !== 'undefined' && user) {
+      localStorage.setItem(`eventosUnicos_${user.uid}`, JSON.stringify(eventosUnicos));
     }
-  }, [eventosUnicos]);
+  }, [eventosUnicos, user]);
 
   // Cargar pacientes desde Firestore
   useEffect(() => {
     async function fetchPatients() {
-      const data = await patientFirestoreService.getAll();
+      if (!user) return;
+      const data = await patientFirestoreService.getAll(user.uid);
       setPatients(data);
     }
     fetchPatients();
-  }, []);
+  }, [user]);
 
   // Consolidar atenciones de todos los pacientes
   const events: {

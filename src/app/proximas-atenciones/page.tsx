@@ -7,6 +7,7 @@ const centroColors: Record<string, { bg: string; border: string; text: string }>
   'Otro':     { bg: '#ffe5e5', border: '#ff7b7b', text: '#b91c1c' },
 };
 import { useEffect, useState } from "react";
+import { useAuth } from "@/components/auth/FirebaseAuthProvider";
 import { patientFirestoreService } from "@/lib/services/patientFirestoreService";
 import { Patient } from "@/lib/db/types";
 import { addDays, format, isAfter, isEqual } from "date-fns";
@@ -16,6 +17,7 @@ const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "
 // getTimeOptions eliminado porque no se usa
 
 export default function ProximasAtencionesPage() {
+  const { user } = useAuth();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [eventosUnicos, setEventosUnicos] = useState<{
     nombre: string;
@@ -28,15 +30,16 @@ export default function ProximasAtencionesPage() {
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
-      const pats = await patientFirestoreService.getAll();
+      if (!user) return;
+      const pats = await patientFirestoreService.getAll(user.uid);
       setPatients(pats);
       try {
-        setEventosUnicos(JSON.parse(localStorage.getItem('eventosUnicos') || '[]'));
+        setEventosUnicos(JSON.parse(localStorage.getItem(`eventosUnicos_${user.uid}`) || '[]'));
       } catch { setEventosUnicos([]); }
       setLoading(false);
     }
     fetchData();
-  }, []);
+  }, [user]);
 
   // Consolidar eventos de los próximos 7 días (pacientes y únicos)
   const now = new Date();

@@ -1,3 +1,4 @@
+
 import { db } from "@/lib/firebase";
 import {
   collection,
@@ -9,22 +10,29 @@ import {
   deleteDoc,
   setDoc,
   QueryDocumentSnapshot,
-  DocumentData
+  DocumentData,
+  query,
+  where
 } from "firebase/firestore";
 import { Patient } from "@/lib/db/types";
 
 const PATIENTS_COLLECTION = "patients";
 
-function fromFirestore(docSnap: QueryDocumentSnapshot<DocumentData>): Patient {
+function fromFirestore(docSnap: QueryDocumentSnapshot<unknown, DocumentData>): Patient {
+  const data = docSnap.data() || {};
   return {
     id: docSnap.id,
-    ...docSnap.data(),
+    ...(typeof data === 'object' ? data : {}),
   } as Patient;
 }
 
 export const patientFirestoreService = {
-  async getAll(): Promise<Patient[]> {
-    const querySnapshot = await getDocs(collection(db, PATIENTS_COLLECTION));
+  async getAll(userId?: string): Promise<Patient[]> {
+    let q: any = collection(db, PATIENTS_COLLECTION);
+    if (userId) {
+      q = query(q, where("userId", "==", userId));
+    }
+    const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(fromFirestore);
   },
   async getById(id: string): Promise<Patient | null> {
@@ -32,6 +40,9 @@ export const patientFirestoreService = {
     return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as Patient : null;
   },
   async create(patient: Omit<Patient, "id">): Promise<string> {
+    if (!("userId" in patient) || !patient.userId) {
+      throw new Error('userId es requerido para crear un paciente');
+    }
     const docRef = await addDoc(collection(db, PATIENTS_COLLECTION), patient);
     return docRef.id;
   },
@@ -45,3 +56,4 @@ export const patientFirestoreService = {
     await setDoc(doc(db, PATIENTS_COLLECTION, id), patient);
   }
 };
+

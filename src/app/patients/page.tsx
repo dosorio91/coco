@@ -8,6 +8,7 @@ import { Patient } from "@/lib/db/types"
 
 export default function PatientsPage() {
   const { patients, loading, addPatient, editPatient: updatePatient, removePatient: deletePatient } = usePatients()
+  // Ahora los pacientes y addPatient están filtrados por usuario autenticado
 
   const handleAdd = async (patientData: Omit<Patient, "id">) => {
     const now = new Date().toISOString();

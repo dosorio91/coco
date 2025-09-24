@@ -1,16 +1,19 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Patient } from '@/lib/db/types'
 import { patientFirestoreService } from '@/lib/services/patientFirestoreService'
+import { useAuth } from '@/components/auth/FirebaseAuthProvider'
 
 export function usePatients() {
   const [patients, setPatients] = useState<Patient[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
+  const { user } = useAuth();
 
   const loadPatients = useCallback(async () => {
+    if (!user) return;
     try {
       setLoading(true)
-      const data = await patientFirestoreService.getAll()
+      const data = await patientFirestoreService.getAll(user.uid)
       setPatients(data)
       setError(null)
     } catch (e) {
@@ -18,16 +21,17 @@ export function usePatients() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [user])
 
   useEffect(() => {
     loadPatients()
-  }, [loadPatients])
+  }, [loadPatients, user])
 
   const addPatient = async (patientData: Omit<Patient, "id">) => {
     try {
-      const id = await patientFirestoreService.create(patientData)
-      const newPatient = { ...patientData, id }
+      if (!user) throw new Error('No hay usuario autenticado');
+      const id = await patientFirestoreService.create({ ...patientData, userId: user.uid })
+      const newPatient = { ...patientData, id, userId: user.uid }
       setPatients(prev => [...prev, newPatient])
       return newPatient
     } catch (e) {
