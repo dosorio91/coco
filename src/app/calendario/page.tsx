@@ -100,14 +100,48 @@ const centroColors: Record<string, { bg: string; border: string; text: string }>
     });
   }
 
-  // Agrupar eventos por día
+  // Agrupar eventos por día y agrupar bloques consecutivos de un mismo paciente
   const eventsByDay = weekDays.map(day => {
     const dateStr = format(day, "yyyy-MM-dd");
+    // Filtrar y ordenar eventos por hora de inicio
+    const dayEvents = events
+      .filter(e => e.date === dateStr)
+      .sort((a, b) => a.start.localeCompare(b.start));
+
+    // Agrupar bloques consecutivos de un mismo paciente
+    const grouped: Array<{
+      start: string;
+      end: string;
+      name: string;
+      id: string;
+      tipo: string;
+      centro?: string;
+      date: string;
+    }> = [];
+    for (let i = 0; i < dayEvents.length; ) {
+      const curr = dayEvents[i];
+      if (curr.tipo !== 'paciente') {
+        grouped.push(curr);
+        i++;
+        continue;
+      }
+      let j = i + 1;
+      let lastEnd = curr.end;
+      while (
+        j < dayEvents.length &&
+        dayEvents[j].tipo === 'paciente' &&
+        dayEvents[j].id === curr.id &&
+        dayEvents[j].start === lastEnd
+      ) {
+        lastEnd = dayEvents[j].end;
+        j++;
+      }
+      grouped.push({ ...curr, end: lastEnd, date: curr.date });
+      i = j;
+    }
     return {
       date: dateStr,
-      events: events
-        .filter(e => e.date === dateStr)
-        .sort((a, b) => a.start.localeCompare(b.start)),
+      events: grouped,
     };
   });
 
@@ -236,35 +270,38 @@ const centroColors: Record<string, { bg: string; border: string; text: string }>
             </tr>
           </thead>
           <tbody>
-            {getTimeOptions().map((hour) => (
-              <tr key={hour}>
-                <td className="p-3 text-left font-mono text-xs text-[#b0b3c6] bg-[#f8fafc] border-b border-[#e5e7eb]">{hour}</td>
-                {eventsByDay.map((day, dIdx) => {
-                  const event = day.events.find(e => e.start <= hour && hour < e.end);
-                  return (
-                    <td key={dIdx} className="p-1 text-center align-top min-w-[140px] border-b border-[#e5e7eb]">
-                      {event ? (
-                        event.tipo === 'unico' ? (
-                          <div className="relative rounded-xl px-3 py-2 text-xs font-semibold text-green-800 shadow-sm flex flex-col items-center justify-center bg-green-100 border-l-4 border-green-400" style={{ boxShadow: '0 2px 8px #22c55e22' }}>
-                            <button
-                              className="absolute -top-2 -right-2 w-6 h-6 flex items-center justify-center bg-red-500 text-white rounded-full text-xs font-bold shadow hover:bg-red-700"
-                              title="Eliminar evento"
-                              onClick={() => setEventosUnicos(ev => ev.filter(eu => !(eu.nombre === event.name && eu.fecha === event.date && eu.horaInicio === event.start && eu.horaFin === event.end)))}
-                            >
-                              ×
-                            </button>
-                            <span className="truncate w-full text-sm font-bold">{event.name}</span>
-                            <span className="font-normal text-[12px] text-green-800">{event.start} - {event.end}</span>
-                          </div>
-                        ) : (
+            {getTimeOptions().map((hour, rowIdx, hoursArr) => {
+              // Calcular el rango de cada bloque
+              const start = hour;
+              const end = hoursArr[rowIdx + 1] || '';
+              const label = end ? `${start} - ${end}` : start;
+              return (
+                <tr key={hour}>
+                  <td className="p-3 text-left font-mono text-xs text-[#b0b3c6] bg-[#f8fafc] border-b border-[#e5e7eb] min-w-[130px] whitespace-nowrap">{label}</td>
+                  {eventsByDay.map((day, dIdx) => {
+                  // Buscar eventos que inician y/o terminan en este bloque
+                  // Agrupación simple: solo agrupar bloques consecutivos de un mismo paciente
+                  const groupedPatientIdx = day.events.findIndex(e => e.start === hour && e.tipo === 'paciente');
+                  if (groupedPatientIdx !== -1) {
+                    const event = day.events[groupedPatientIdx];
+                    const startIdx = hoursArr.indexOf(event.start);
+                    const endIdx = hoursArr.indexOf(event.end);
+                    const span = (endIdx !== -1 && endIdx > startIdx) ? endIdx - startIdx : 1;
+                    if (rowIdx === startIdx) {
+                      return (
+                        <td key={dIdx} rowSpan={span} className="p-1 text-center align-top min-w-[130px] whitespace-nowrap border-b border-[#e5e7eb]">
                           <Link
                             href={`/patients/${event.id}`}
-                            className="rounded-xl px-3 py-2 text-xs font-semibold flex flex-col items-center justify-center cursor-pointer transition-colors"
+                            className="rounded-xl px-3 py-2 text-xs font-semibold flex flex-col items-center justify-center cursor-pointer transition-colors h-full"
                             style={{
                               background: centroColors[event.centro || 'Otro']?.bg,
                               borderLeft: `4px solid ${centroColors[event.centro || 'Otro']?.border}`,
                               color: centroColors[event.centro || 'Otro']?.text,
                               boxShadow: `0 2px 8px ${centroColors[event.centro || 'Otro']?.border}22`,
+                              minHeight: `calc(${span} * 44px)`,
+                              display: 'flex',
+                              justifyContent: 'center',
+                              height: '100%'
                             }}
                             title={`Ir al perfil de ${event.name}`}
                           >
@@ -272,13 +309,121 @@ const centroColors: Record<string, { bg: string; border: string; text: string }>
                             <span className="font-normal text-[12px]" style={{ color: centroColors[event.centro || 'Otro']?.text }}>{event.start} - {event.end}</span>
                             <span className="font-normal text-[11px] mt-1" style={{ color: centroColors[event.centro || 'Otro']?.text }}>{event.centro}</span>
                           </Link>
-                        )
-                      ) : null}
+                        </td>
+                      );
+                    } else {
+                      return null;
+                    }
+                  }
+                  // Si solo hay pacientes que inician aquí (sin colisión), usar rowSpan agrupado
+                  // ...solo lógica de agrupación de pacientes...
+                  // Si no hay evento agrupado de paciente, mostrar eventos únicos o de otros tipos (mitades)
+                  const eventsStartHere = day.events
+                    .filter(e => e.start === hour && e.tipo !== 'paciente')
+                    .sort((a, b) => a.start.localeCompare(b.start));
+                  const eventsEndHere = day.events
+                    .filter(e => e.end === hour && e.tipo !== 'paciente')
+                    .sort((a, b) => a.end.localeCompare(b.end));
+                  if (eventsStartHere.length === 0 && eventsEndHere.length === 0) {
+                    return <td key={dIdx} className="p-1 text-center align-top min-w-[130px] whitespace-nowrap border-b border-[#e5e7eb]" />;
+                  }
+                  // Renderizar mitades: superior (terminan aquí), inferior (inician aquí)
+                  return (
+                    <td key={dIdx} className="p-1 text-center align-top min-w-[130px] whitespace-nowrap border-b border-[#e5e7eb]">
+                      <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 0 }}>
+                          {eventsEndHere.map((event, idx) => (
+                            <div
+                              key={"end-" + idx}
+                              className="w-full flex flex-col items-center justify-center"
+                              style={{
+                                background: event.tipo === 'unico'
+                                  ? '#bbf7d0'
+                                  : centroColors[event.centro || 'Otro']?.bg,
+                                borderLeft: event.tipo === 'unico'
+                                  ? '4px solid #22c55e'
+                                  : `4px solid ${centroColors[event.centro || 'Otro']?.border}`,
+                                color: event.tipo === 'unico'
+                                  ? '#166534'
+                                  : centroColors[event.centro || 'Otro']?.text,
+                                boxShadow: event.tipo === 'unico'
+                                  ? '0 2px 8px #22c55e22'
+                                  : `0 2px 8px ${centroColors[event.centro || 'Otro']?.border}22`,
+                                borderRadius: 8,
+                                padding: 4,
+                                margin: 1,
+                              }}
+                              title={event.tipo === 'unico' ? undefined : `Ir al perfil de ${event.name}`}
+                            >
+                              {event.tipo === 'unico' ? (
+                                <>
+                                  <span className="truncate w-full text-sm font-bold">{event.name}</span>
+                                  <span className="font-normal text-[12px]">{event.start} - {event.end}</span>
+                                </>
+                              ) : (
+                                <Link
+                                  href={`/patients/${event.id}`}
+                                  className="w-full flex flex-col items-center justify-center cursor-pointer"
+                                  style={{ color: centroColors[event.centro || 'Otro']?.text }}
+                                >
+                                  <span className="truncate w-full text-sm font-bold">{event.name}</span>
+                                  <span className="font-normal text-[12px]">{event.start} - {event.end}</span>
+                                  <span className="font-normal text-[11px] mt-1">{event.centro}</span>
+                                </Link>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 0 }}>
+                          {eventsStartHere.map((event, idx) => (
+                            <div
+                              key={"start-" + idx}
+                              className="w-full flex flex-col items-center justify-center"
+                              style={{
+                                background: event.tipo === 'unico'
+                                  ? '#bbf7d0'
+                                  : centroColors[event.centro || 'Otro']?.bg,
+                                borderLeft: event.tipo === 'unico'
+                                  ? '4px solid #22c55e'
+                                  : `4px solid ${centroColors[event.centro || 'Otro']?.border}`,
+                                color: event.tipo === 'unico'
+                                  ? '#166534'
+                                  : centroColors[event.centro || 'Otro']?.text,
+                                boxShadow: event.tipo === 'unico'
+                                  ? '0 2px 8px #22c55e22'
+                                  : `0 2px 8px ${centroColors[event.centro || 'Otro']?.border}22`,
+                                borderRadius: 8,
+                                padding: 4,
+                                margin: 1,
+                              }}
+                              title={event.tipo === 'unico' ? undefined : `Ir al perfil de ${event.name}`}
+                            >
+                              {event.tipo === 'unico' ? (
+                                <>
+                                  <span className="truncate w-full text-sm font-bold">{event.name}</span>
+                                  <span className="font-normal text-[12px]">{event.start} - {event.end}</span>
+                                </>
+                              ) : (
+                                <Link
+                                  href={`/patients/${event.id}`}
+                                  className="w-full flex flex-col items-center justify-center cursor-pointer"
+                                  style={{ color: centroColors[event.centro || 'Otro']?.text }}
+                                >
+                                  <span className="truncate w-full text-sm font-bold">{event.name}</span>
+                                  <span className="font-normal text-[12px]">{event.start} - {event.end}</span>
+                                  <span className="font-normal text-[11px] mt-1">{event.centro}</span>
+                                </Link>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </td>
                   );
-                })}
-              </tr>
-            ))}
+                  })}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
