@@ -1,15 +1,21 @@
 ﻿
+
+"use client";
 import ProtectedLayout from "./(protected)/layout";
 import Link from "next/link";
+import { useAuth } from "@/components/auth/FirebaseAuthProvider";
+import { UserIcon, CalendarIcon, ClipboardListIcon } from "lucide-react";
 
 export default function Home() {
+  const { user } = useAuth();
+  const displayName = user?.displayName || user?.email || "Usuario";
   return (
     <ProtectedLayout>
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
         <main className="container mx-auto py-20">
           <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-4xl font-bold tracking-tight text-[#475569] sm:text-6xl">
-              ¡Hola Constanza!
+            <h1 className="text-2xl font-bold tracking-tight text-[#475569] sm:text-4xl">
+              {`¡Hola ${displayName}!`}
             </h1>
             <p className="mt-6 text-lg leading-8 text-gray-600">
               Sistema de gestion de pacientes y sesiones terapeuticas
@@ -25,7 +31,10 @@ export default function Home() {
                   display: 'inline-block',
                 }}
               >
-                Ir a Pacientes
+                <span className="flex items-center justify-center gap-2 w-full">
+                  <UserIcon className="w-5 h-5" />
+                  <span>Pacientes</span>
+                </span>
               </Link>
               <Link
                 href="/calendario"
@@ -37,7 +46,10 @@ export default function Home() {
                   display: 'inline-block',
                 }}
               >
-                Ir al Calendario
+                <span className="flex items-center justify-center gap-2 w-full">
+                  <CalendarIcon className="w-5 h-5" />
+                  <span>Calendario</span>
+                </span>
               </Link>
               <Link
                 href="/proximas-atenciones"
@@ -49,7 +61,10 @@ export default function Home() {
                   display: 'inline-block',
                 }}
               >
-                Próximas Atenciones
+                <span className="flex items-center justify-center gap-2 w-full">
+                  <ClipboardListIcon className="w-5 h-5" />
+                  <span>Próximas Atenciones</span>
+                </span>
               </Link>
             </div>
           </div>
