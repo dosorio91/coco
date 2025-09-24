@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, ReactNode } from "react"
+import { useAuth } from "@/components/auth/FirebaseAuthProvider"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -32,14 +33,20 @@ export function PatientDialog({ patient, onSave, buttonLabel = "Agregar Paciente
     centro: patient?.centro || "Fénix",
   })
 
+  const { user } = useAuth();
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) {
+      alert('No hay usuario autenticado');
+      return;
+    }
     const now = new Date().toISOString();
     onSave({
       ...formData,
       active: patient?.active ?? true,
       createdAt: patient?.createdAt ?? now,
       updatedAt: now,
+      userId: user.uid,
     });
     setOpen(false);
   }
