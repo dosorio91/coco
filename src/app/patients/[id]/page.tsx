@@ -30,8 +30,7 @@ export default function PatientProfile() {
   const { user } = useAuth();
   // Crear nueva sesión
   const handleCreateSession = async () => {
-  if (!user) throw new Error('No hay usuario autenticado');
-  await sessionFirestoreService.create({ ...sessionToCreate, userId: user.uid });
+    if (!user) throw new Error('No hay usuario autenticado');
     try {
       if (!params?.id) return;
       // Normalizar fecha a dd/mm/aaaa
@@ -54,6 +53,7 @@ export default function PatientProfile() {
         date,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        userId: user.uid,
       };
       await sessionFirestoreService.create(sessionToCreate);
       await loadSessions();
@@ -80,16 +80,15 @@ export default function PatientProfile() {
         setLoading(false);
         return;
       }
+      if (!user) return;
       const patientData = await patientFirestoreService.getById(params.id as string);
-  if (!user) return;
       setPatient(patientData);
       setSchedules(patientData?.schedules || []);
       setLoading(false);
       // Cargar sesiones
       try {
-        const sessionData = await sessionFirestoreService.getAll(params.id as string);
-  const sessionData = await sessionFirestoreService.getAll(params.id as string, user.uid);
-        setSessions(sessionData);
+        const sessionsResult = await sessionFirestoreService.getAll(user.uid);
+        setSessions(sessionsResult.filter(s => s.patientId === params.id));
       } catch (error) {
         // No bloquear la carga por error de sesiones
       }
@@ -105,8 +104,7 @@ export default function PatientProfile() {
   async function getFirstAvailableBlock(existingBlocks: { day: string; start: string; end: string }[]): Promise<{ day: string; start: string; end: string }> {
     const days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
     const times = getTimeOptions();
-    const allPatients = await patientFirestoreService.getAll();
-  if (!user) return [];
+    if (!user) return { day: 'Lunes', start: '08:00', end: '08:15' };
   const allPatients = await patientFirestoreService.getAll(user.uid);
     let allBlocks: { day: string; start: string; end: string }[] = [];
     for (const p of allPatients) {
@@ -131,8 +129,9 @@ export default function PatientProfile() {
 
   // --- Helper: findScheduleCollision ---
   async function findScheduleCollision(block: { day: string; start: string; end: string }) {
-    if (!block || !block.day || !block.start || !block.end) return null;
-    const allPatients = await patientFirestoreService.getAll();
+  if (!block || !block.day || !block.start || !block.end) return null;
+  if (!user) return null;
+  const allPatients = await patientFirestoreService.getAll(user.uid);
     function toMinutes(t: string) {
       const [h, m] = t.split(":").map(Number);
       return h * 60 + m;
@@ -189,9 +188,9 @@ export default function PatientProfile() {
 
   async function loadSessions() {
     try {
-      if (!params?.id) return;
-      const sessionData = await sessionFirestoreService.getAll(params.id as string);
-      setSessions(sessionData);
+      if (!params?.id || !user) return;
+  const sessionsResult = await sessionFirestoreService.getAll(user.uid);
+  setSessions(sessionsResult.filter(s => s.patientId === params.id));
     } catch (error) {
       window.alert("Error al cargar las sesiones");
     }
