@@ -34,13 +34,12 @@ export default function ProximasAtencionesPage() {
   // Consolidar eventos de los próximos 7 días (pacientes y únicos)
   const now = new Date();
   const endDate = addDays(now, 7);
-  const eventos: { date: string; start: string; end: string; name: string; tipo: string }[] = [];
+  const eventos: { date: string; start: string; end: string; name: string; tipo: string; centro?: string }[] = [];
   for (const patient of patients) {
     if (patient.schedules && patient.schedules.length > 0) {
       for (const block of patient.schedules) {
-        // Buscar la próxima fecha de ese día >= hoy y <= 7 días
         let next = new Date(now);
-        for (let i = 0; i < 7; i++) { // solo próximos 7 días
+        for (let i = 0; i < 7; i++) {
           if (days[next.getDay() === 0 ? 6 : next.getDay() - 1] === block.day) {
             const dateStr = format(next, "yyyy-MM-dd");
             if ((isAfter(next, now) || isEqual(next, now)) && (isAfter(endDate, next) || isEqual(endDate, next))) {
@@ -49,7 +48,8 @@ export default function ProximasAtencionesPage() {
                 start: block.start,
                 end: block.end,
                 name: `${patient.firstName} ${patient.lastName}`,
-                tipo: "Paciente"
+                tipo: "Paciente",
+                centro: patient.centro
               });
             }
             break;
@@ -101,6 +101,7 @@ export default function ProximasAtencionesPage() {
                     <tr>
                       <th className="px-4 py-3">Hora</th>
                       <th className="px-4 py-3">Paciente</th>
+                      <th className="px-4 py-3">Centro</th>
                       <th className="px-4 py-3">Tipo</th>
                     </tr>
                   </thead>
@@ -109,6 +110,7 @@ export default function ProximasAtencionesPage() {
                       <tr key={i} className="border-b hover:bg-gray-50">
                         <td className="px-4 py-3 align-top">{e.start} - {e.end}</td>
                         <td className="px-4 py-3 align-top font-semibold text-[#22223b]">{e.name}</td>
+                        <td className="px-4 py-3 align-top">{e.tipo === 'Paciente' ? e.centro : '-'}</td>
                         <td className="px-4 py-3 align-top">
                           {e.tipo === 'Única' ? <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-bold">Única</span> : <span className="bg-[#edeaff] text-[#635bff] px-2 py-1 rounded text-xs font-bold">Paciente</span>}
                         </td>

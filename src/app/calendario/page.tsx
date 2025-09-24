@@ -57,6 +57,7 @@ export default function CalendarioPage() {
     name: string;
     id: string;
     tipo: string;
+    centro?: string;
   }[] = [];
   for (const patient of patients) {
     if (patient.schedules && patient.schedules.length > 0) {
@@ -71,11 +72,19 @@ export default function CalendarioPage() {
             name: `${patient.firstName} ${patient.lastName}`,
             id: patient.id,
             tipo: 'paciente',
+            centro: patient.centro,
           });
         }
       }
     }
   }
+// Mapeo de colores por centro
+const centroColors: Record<string, { bg: string; border: string; text: string }> = {
+  'Fénix':    { bg: '#edeaff', border: '#bcb3ff', text: '#635bff' },
+  'Bosques':  { bg: '#dcfce7', border: '#22c55e', text: '#166534' },
+  'Particular': { bg: '#fef9c3', border: '#fde047', text: '#a16207' },
+  'Otro':     { bg: '#ffe5e5', border: '#ff7b7b', text: '#b91c1c' },
+};
   // Agregar eventos únicos creados por el usuario
   for (const ev of eventosUnicos) {
     events.push({
@@ -192,6 +201,15 @@ export default function CalendarioPage() {
           </Link>
         </div>
       </div>
+      {/* Leyenda de colores por centro */}
+      <div className="flex flex-wrap gap-4 items-center mb-4">
+        {Object.entries(centroColors).map(([centro, color]) => (
+          <span key={centro} className="flex items-center gap-2 text-xs" style={{ color: color.text }}>
+            <span style={{ background: color.bg, borderLeft: `4px solid ${color.border}`, width: 18, height: 18, display: 'inline-block', borderRadius: 6, marginRight: 4 }}></span>
+            {centro}
+          </span>
+        ))}
+      </div>
       {/* Week Navigation */}
       <div className="flex items-center justify-between mb-4">
         <button className="px-3 py-1 rounded bg-gray-100 border hover:bg-gray-200 text-[#22223b]" onClick={() => setCurrent(subWeeks(current, 1))}>&lt;</button>
@@ -238,12 +256,18 @@ export default function CalendarioPage() {
                         ) : (
                           <Link
                             href={`/patients/${event.id}`}
-                            className="rounded-xl px-3 py-2 text-xs font-semibold text-[#635bff] shadow-sm flex flex-col items-center justify-center cursor-pointer hover:bg-[#d1cfff] transition-colors"
-                            style={{ background: '#edeaff', borderLeft: '4px solid #bcb3ff', boxShadow: '0 2px 8px #635bff22' }}
+                            className="rounded-xl px-3 py-2 text-xs font-semibold flex flex-col items-center justify-center cursor-pointer transition-colors"
+                            style={{
+                              background: centroColors[event.centro || 'Otro']?.bg,
+                              borderLeft: `4px solid ${centroColors[event.centro || 'Otro']?.border}`,
+                              color: centroColors[event.centro || 'Otro']?.text,
+                              boxShadow: `0 2px 8px ${centroColors[event.centro || 'Otro']?.border}22`,
+                            }}
                             title={`Ir al perfil de ${event.name}`}
                           >
                             <span className="truncate w-full text-sm font-bold">{event.name}</span>
-                            <span className="font-normal text-[12px] text-[#635bffbb]">{event.start} - {event.end}</span>
+                            <span className="font-normal text-[12px]" style={{ color: centroColors[event.centro || 'Otro']?.text }}>{event.start} - {event.end}</span>
+                            <span className="font-normal text-[11px] mt-1" style={{ color: centroColors[event.centro || 'Otro']?.text }}>{event.centro}</span>
                           </Link>
                         )
                       ) : null}
