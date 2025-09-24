@@ -1,4 +1,11 @@
 "use client";
+// Colores por centro (igual que en calendario)
+const centroColors: Record<string, { bg: string; border: string; text: string }> = {
+  'Fénix':    { bg: '#edeaff', border: '#bcb3ff', text: '#635bff' },
+  'Bosques':  { bg: '#dcfce7', border: '#22c55e', text: '#166534' },
+  'Particular': { bg: '#fef9c3', border: '#fde047', text: '#a16207' },
+  'Otro':     { bg: '#ffe5e5', border: '#ff7b7b', text: '#b91c1c' },
+};
 import { useEffect, useState } from "react";
 import { patientFirestoreService } from "@/lib/services/patientFirestoreService";
 import { Patient } from "@/lib/db/types";
@@ -96,23 +103,40 @@ export default function ProximasAtencionesPage() {
             <div key={fecha} className="mb-8">
               <div className="text-lg font-bold text-[#635bff] mb-2">{fecha.split('-').reverse().join('/')}</div>
               <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left mb-2">
+                <table className="min-w-full w-full text-sm text-left mb-2 border-separate border-spacing-0 table-fixed">
+                  <colgroup>
+                    <col style={{ width: '140px' }} />
+                    <col style={{ width: '260px' }} />
+                    <col style={{ width: '160px' }} />
+                  </colgroup>
                   <thead className="text-xs uppercase bg-gray-50">
                     <tr>
-                      <th className="px-4 py-3">Hora</th>
-                      <th className="px-4 py-3">Paciente</th>
-                      <th className="px-4 py-3">Centro</th>
-                      <th className="px-4 py-3">Tipo</th>
+                      <th className="px-4 py-3 border-b border-[#e5e7eb]">Hora</th>
+                      <th className="px-4 py-3 border-b border-[#e5e7eb]">Paciente</th>
+                      <th className="px-4 py-3 border-b border-[#e5e7eb]">Centro</th>
                     </tr>
                   </thead>
                   <tbody>
                     {agrupados[fecha].map((e, i) => (
-                      <tr key={i} className="border-b hover:bg-gray-50">
-                        <td className="px-4 py-3 align-top">{e.start} - {e.end}</td>
-                        <td className="px-4 py-3 align-top font-semibold text-[#22223b]">{e.name}</td>
-                        <td className="px-4 py-3 align-top">{e.tipo === 'Paciente' ? e.centro : '-'}</td>
-                        <td className="px-4 py-3 align-top">
-                          {e.tipo === 'Única' ? <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-bold">Única</span> : <span className="bg-[#edeaff] text-[#635bff] px-2 py-1 rounded text-xs font-bold">Paciente</span>}
+                      <tr key={i} className="border-b border-[#e5e7eb] hover:bg-gray-50">
+                        <td className="px-4 py-3 align-top whitespace-nowrap">{e.start} - {e.end}</td>
+                        <td className="px-4 py-3 align-top font-semibold text-[#22223b] whitespace-nowrap overflow-hidden text-ellipsis">{e.name}</td>
+                        <td className="px-4 py-3 align-top whitespace-nowrap overflow-hidden text-ellipsis">
+                          {e.tipo === 'Paciente' && e.centro ? (
+                            <span
+                              className="px-2 py-1 rounded text-xs font-bold"
+                              style={{
+                                background: centroColors[e.centro]?.bg || '#f3f4f6',
+                                borderLeft: `4px solid ${centroColors[e.centro]?.border || '#d1d5db'}`,
+                                color: centroColors[e.centro]?.text || '#22223b',
+                                display: 'inline-block',
+                              }}
+                            >
+                              {e.centro}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
                         </td>
                       </tr>
                     ))}
