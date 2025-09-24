@@ -28,7 +28,7 @@ function fromFirestore(docSnap: QueryDocumentSnapshot<unknown, DocumentData>): P
 
 export const patientFirestoreService = {
   async getAll(userId?: string): Promise<Patient[]> {
-    let q: any = collection(db, PATIENTS_COLLECTION);
+  let q: import('firebase/firestore').CollectionReference<DocumentData> | import('firebase/firestore').Query<DocumentData> = collection(db, PATIENTS_COLLECTION);
     if (userId) {
       q = query(q, where("userId", "==", userId));
     }
