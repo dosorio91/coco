@@ -81,14 +81,15 @@ export default function PatientProfile() {
         return;
       }
       if (!user) return;
-      const patientData = await patientFirestoreService.getById(params.id as string);
+      const patientId = Array.isArray(params.id) ? params.id[0] : params.id;
+      const patientData = await patientFirestoreService.getById(patientId as string);
       setPatient(patientData);
       setSchedules(patientData?.schedules || []);
       setLoading(false);
       // Cargar sesiones
       try {
-        const sessionsResult = await sessionFirestoreService.getAll(user.uid);
-        setSessions(sessionsResult.filter(s => s.patientId === params.id));
+        const sessionsResult = await sessionFirestoreService.getAll(patientId);
+        setSessions(sessionsResult);
       } catch (error) {
         // No bloquear la carga por error de sesiones
       }
@@ -189,8 +190,9 @@ export default function PatientProfile() {
   async function loadSessions() {
     try {
       if (!params?.id || !user) return;
-  const sessionsResult = await sessionFirestoreService.getAll(user.uid);
-  setSessions(sessionsResult.filter(s => s.patientId === params.id));
+      const patientId = Array.isArray(params.id) ? params.id[0] : params.id;
+      const sessionsResult = await sessionFirestoreService.getAll(patientId);
+      setSessions(sessionsResult);
     } catch (error) {
       window.alert("Error al cargar las sesiones");
     }
@@ -588,8 +590,19 @@ export default function PatientProfile() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          {/* Botón de eliminar sesión eliminado por limpieza de lint */}
-                          {/* Botón para informe individual de sesión */}
+                          <Button
+                            size="sm"
+                            className="bg-[#ffe5e5] hover:bg-[#ffb3b3] text-[#b91c1c] border-0"
+                            title="Eliminar sesión"
+                            onClick={async () => {
+                              if (window.confirm('¿Seguro que deseas eliminar esta sesión?')) {
+                                await sessionFirestoreService.remove(session.id);
+                                await loadSessions();
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                           {patient && (
                             <SessionReportPrintButton
                               patient={{
