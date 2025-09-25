@@ -16,7 +16,9 @@ export function Header() {
       {/* Barra superior morada */}
   <div className="w-full bg-[#635bff] flex items-center justify-between px-4 py-3">
         <div style={{ width: 36 }} />
-        <span className="text-white font-bold text-lg text-center flex-1">ClinicApp Fono</span>
+        <Link href="/" className="text-white font-bold text-lg text-center flex-1" style={{ textDecoration: 'none' }}>
+          ClinicApp Fono
+        </Link>
         {user && (
           <Link href="/perfil" title="Perfil">
             <Avatar src={user.photoURL || undefined} alt="Perfil" size={32} className="hover:ring-2 hover:ring-white transition" />
