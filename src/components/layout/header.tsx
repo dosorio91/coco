@@ -3,6 +3,7 @@
 import { useAuth, LogoutButton } from "@/components/auth/FirebaseAuthProvider";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Avatar } from "@/components/ui/avatar";
 
 export function Header() {
   const pathname = usePathname();
@@ -55,6 +56,9 @@ export function Header() {
         <div className="flex items-center gap-4 mr-6">
           {user && (
             <>
+              <Link href="/perfil" title="Perfil">
+                <Avatar src={user.photoURL || undefined} alt="Perfil" size={36} className="hover:ring-2 hover:ring-[#6c63ff] transition" />
+              </Link>
               <span className="text-sm text-gray-700">{user.displayName || user.email}</span>
               <LogoutButton />
             </>

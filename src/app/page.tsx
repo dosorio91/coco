@@ -20,15 +20,15 @@ export default function Home() {
             <p className="mt-6 text-lg leading-8 text-gray-600">
               Sistema de gestion de pacientes y sesiones terapeuticas
             </p>
-            <div className="mt-10 flex flex-col items-center gap-4">
+            <div className="mt-10 flex flex-col items-center gap-4 w-full max-w-xs mx-auto">
               <Link
                 href="/patients"
-                className="rounded-xl bg-[#6c63ff] px-7 py-2 text-base font-bold text-white shadow-md hover:bg-[#5548c8] transition-colors duration-150 focus-visible:outline-none"
+                className="rounded-xl bg-[#6c63ff] px-7 py-4 text-base font-bold text-white shadow-md hover:bg-[#5548c8] transition-colors duration-150 focus-visible:outline-none w-full min-h-[56px] flex items-center justify-center"
                 style={{
                   boxShadow: '0 2px 8px #6c63ff33',
                   letterSpacing: '0.01em',
                   minWidth: '180px',
-                  display: 'inline-block',
+                  minHeight: '56px',
                 }}
               >
                 <span className="flex items-center justify-center gap-2 w-full">
@@ -38,12 +38,12 @@ export default function Home() {
               </Link>
               <Link
                 href="/calendario"
-                className="rounded-xl bg-[#6c63ff] px-7 py-2 text-base font-bold text-white shadow-md hover:bg-[#5548c8] transition-colors duration-150 focus-visible:outline-none"
+                className="rounded-xl bg-[#6c63ff] px-7 py-4 text-base font-bold text-white shadow-md hover:bg-[#5548c8] transition-colors duration-150 focus-visible:outline-none w-full min-h-[56px] flex items-center justify-center"
                 style={{
                   boxShadow: '0 2px 8px #6c63ff33',
                   letterSpacing: '0.01em',
                   minWidth: '180px',
-                  display: 'inline-block',
+                  minHeight: '56px',
                 }}
               >
                 <span className="flex items-center justify-center gap-2 w-full">
@@ -53,12 +53,12 @@ export default function Home() {
               </Link>
               <Link
                 href="/proximas-atenciones"
-                className="rounded-xl bg-[#6c63ff] px-7 py-2 text-base font-bold text-white shadow-md hover:bg-[#5548c8] transition-colors duration-150 focus-visible:outline-none"
+                className="rounded-xl bg-[#6c63ff] px-7 py-4 text-base font-bold text-white shadow-md hover:bg-[#5548c8] transition-colors duration-150 focus-visible:outline-none w-full min-h-[56px] flex items-center justify-center"
                 style={{
                   boxShadow: '0 2px 8px #6c63ff33',
                   letterSpacing: '0.01em',
                   minWidth: '180px',
-                  display: 'inline-block',
+                  minHeight: '56px',
                 }}
               >
                 <span className="flex items-center justify-center gap-2 w-full">
