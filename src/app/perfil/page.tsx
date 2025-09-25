@@ -41,8 +41,12 @@ export default function PerfilPage() {
   }, [user]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type, checked } = e.target;
-    setPerfil((prev) => prev ? { ...prev, [name]: type === "checkbox" ? checked : value } : prev);
+    const { name, value, type } = e.target;
+    let newValue: string | boolean = value;
+    if (type === "checkbox" && "checked" in e.target) {
+      newValue = (e.target as HTMLInputElement).checked;
+    }
+    setPerfil((prev) => prev ? { ...prev, [name]: newValue } : prev);
   };
 
   // Compresión de imagen antes de subir
@@ -58,15 +62,24 @@ export default function PerfilPage() {
         const maxDim = 256;
         let w = img.width, h = img.height;
         if (w > h) {
-          if (w > maxDim) h *= maxDim / w, w = maxDim;
+          if (w > maxDim) {
+            h *= maxDim / w;
+            w = maxDim;
+          }
         } else {
-          if (h > maxDim) w *= maxDim / h, h = maxDim;
+          if (h > maxDim) {
+            w *= maxDim / h;
+            h = maxDim;
+          }
         }
-        canvas.width = w; canvas.height = h;
+        canvas.width = w;
+        canvas.height = h;
         const ctx = canvas.getContext("2d");
-        ctx?.drawImage(img, 0, 0, w, h);
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
-        setPerfil((prev) => prev ? { ...prev, fotoURL: dataUrl } : prev);
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, w, h);
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+          setPerfil((prev) => prev ? { ...prev, fotoURL: dataUrl } : prev);
+        }
       };
     };
     reader.readAsDataURL(file);
